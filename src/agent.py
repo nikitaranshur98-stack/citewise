@@ -104,3 +104,55 @@ def run_research(agent, question):
 
     briefing = fix_titles(result["structured_response"])
     return briefing, collect_evidence(messages), tools_used
+
+
+def format_history(messages, max_turns=3):
+    lines = []
+    for m in messages[-2 * max_turns:]:
+        if m["role"] == "user":
+            lines.append(f"User: {m['content']}")
+            continue
+
+        text = m["content"]
+        if m.get("briefing_json"):
+            try:
+                briefing = Briefing.model_validate_json(m["briefing_json"])
+                claims = " ".join(
+                    f"{i}. {c.statement}" for i, c in enumerate(briefing.claims, start=1)
+                )
+                text = f"{briefing.summary} Claims: {claims}"
+            except Exception:
+                pass
+        lines.append(f"Assistant: {text[:700]}")
+    return "\n".join(lines)
+
+CONDENSE_PROMPT = """You rewrite follow-up questions.
+
+Given the conversation below and a new question, rewrite the new question so it can be understood on its own, without the conversation.
+- Replace references such as "it", "that", "the second claim" or "the paper" with the specific thing they refer to.
+- Keep all names, numbers and terms exactly as written.
+- If the new question already stands on its own, return it unchanged.
+- Do NOT answer the question. Output only the rewritten question.
+
+CONVERSATION:
+{history}
+
+NEW QUESTION: {question}
+
+STANDALONE QUESTION:"""
+
+
+def condense_question(history, question):
+    if not history.strip():
+        return question
+    llm = ChatGoogleGenerativeAI(
+        model=MODEL_NAME, temperature=0, timeout=60, max_retries=2
+    )
+    prompt = CONDENSE_PROMPT.format(history=history, question=question)
+    try:
+        reply = call_with_retry(lambda: llm.invoke(prompt))
+        return reply.text.strip() or question
+    except Exception:
+        return question  # if rewriting fails, fall back to the question as typed
+    
+    
