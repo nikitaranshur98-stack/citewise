@@ -4,4 +4,11 @@ __pycache__/
 *.pyc
 data/
 chroma_db/
+chat_history.db
 
+
+
+chat_history.db
+.vscode/
+
+.venv/

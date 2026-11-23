@@ -1,17 +1,11 @@
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-MODEL_NAME = os.getenv("MODEL_NAME", "gemini-3.1-flash-lite")
-TEMPERATURE = 0
-
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
-
-RELEVANCE_MAX_DISTANCE = 0.7
-
-
-# On Streamlit Community Cloud, copy secrets into the environment (a no-op locally)
+# On Streamlit Community Cloud there is no .env file, so copy secrets into the
+# environment first. Locally this does nothing, because st.secrets raises an error.
 try:
     import streamlit as st
 
@@ -21,3 +15,11 @@ try:
 except Exception:
     pass
 
+MODEL_NAME = os.getenv("MODEL_NAME", "gemini-3.8-flash")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
+TEMPERATURE = 0
+
+RELEVANCE_MAX_DISTANCE = 0.7
+
+DEMO_MODE = os.getenv("DEMO_MODE", "0") == "1"
+MAX_QUESTIONS_PER_SESSION = int(os.getenv("MAX_QUESTIONS_PER_SESSION", "5"))
